@@ -9,11 +9,11 @@ output: md_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Dependancies and setup
+## Dependencies and setup
 
-Load the dependancies
+Load the dependencies.
 
-```{r load_hidden, echo=FALSE, results="hide", warning=FALSE}
+```{r load, echo=FALSE, results="hide", warning=FALSE}
 suppressPackageStartupMessages({
 library(Biobase)
 library(RColorBrewer)
@@ -58,7 +58,7 @@ Initialize the expression data as a matrix
 ```{r}
 expression_data <- as.matrix(exprs(bottomly.eset))
 dim(expression_data)
-expression_data[1:5, 1:10] # take a look at the data
+expression_data[1:10, 1:5] # take a look at the data
 expression_data <- expression_data[rowMeans(expression_data) > 10, ]
 expression_data <- log2(as.matrix(expression_data) + 1)
 ```
@@ -72,7 +72,7 @@ expression_data <- log2(as.matrix(expression_data) + 1)
 Create a heatmap for homework problem 1
 
 ```{r}
-png("Guzek_problem1.png", height = 700, width = 700)
+#png("Guzek_problem1.png", height = 700, width = 700)
 heatmap.2(expression_data,
   # Should be clustered both by columns and rows by default
   main = "Guzek_problem1.png",
@@ -84,7 +84,7 @@ heatmap.2(expression_data,
   dendrogram = "column", # Draw dendrogram only for columns
   scale = "column", # Scale heatmap in the column direction
 )
-dev.off()
+#dev.off()
 ```
 
 ## Homework problem 2
@@ -128,7 +128,7 @@ Let's plot the actual PCA's
 ```{r}
 PC <- data.table(svd.out$v, pData(bottomly.eset))
 
-pdf("Guzek_problem2.pdf", width = 8, height = 5)
+#pdf("Guzek_problem2.pdf", width = 8, height = 5)
 # I tried creating those plots in a for loop but it didn't work for some reason
 # ggplot(PC) +  geom_point(aes(x=V1, y=V2, col=as.factor(strain)))
 # ggplot(PC) +  geom_point(aes(x=V1, y=V3, col=as.factor(strain))) # goodish separation
@@ -148,7 +148,7 @@ ggplot(PC) +
 # ggplot(PC) +  geom_point(aes(x=V4, y=V5, col=as.factor(strain)))
 # ggplot(PC) +  geom_point(aes(x=V4, y=V6, col=as.factor(strain)))
 # ggplot(PC) +  geom_point(aes(x=V5, y=V6, col=as.factor(strain)))
-dev.off()
+#dev.off()
 ```
 
 ## Homework problem 3
@@ -159,12 +159,12 @@ dev.off()
 Top two left singular vectors.
 
 ```{r}
-pdf("Guzek_problem3.pdf", width = 16, height = 9)
+#pdf("Guzek_problem3.pdf", width = 16, height = 9)
 par(mfrow = c(1, 2))
 plot(svd.out$u[, 1], pch = 20)
 plot(svd.out$u[, 2], pch = 20)
 mtext("Guzek_problem3", side = 3, line = -2, outer = TRUE)
-dev.off()
+#dev.off()
 ```
 
 ## Homework problem 4
@@ -176,7 +176,7 @@ Violin plots for the top 5 left singular vectors.
 
 ```{r}
 loadings <- data.table(svd.out$u, pData(bottomly.eset))
-png("Guzek_problem4.png", width = 800, height = 500)
+#png("Guzek_problem4.png", width = 800, height = 500)
 V1 <- ggplot(loadings) +
   geom_violin(aes(x = as.factor(strain), y = V1), draw_quantiles = c(0.25, 0.50, 0.75)) +
   xlab("Strain")
@@ -194,7 +194,7 @@ V5 <- ggplot(loadings) +
   xlab("Strain")
 figure <- ggarrange(ggarrange(V1, V2, V3, labels = c("V1", "V2", "V3"), ncol = 3, nrow = 1), ggarrange(V4, V5, labels = c("V4", "V5"), ncol = 2, nrow = 1), ncol = 1, nrow = 2) + labs(title="Guzek_problem4")
 annotate_figure(figure, top = text_grob("Guzek_problem4"))
-dev.off()
+#dev.off()
 ```
 
 ## Homework problem 5
@@ -202,12 +202,15 @@ dev.off()
 > *Homework Problem 5:*
 > Cluster the genes (rows) using K-means clustering (function `kmeans()`) on the original data, with `k=5` clusters. Then, create a 2-dimensional t-SNE projection (as done previously) while using the 5 clusters to color the data points corresponding to genes.  
 
-Calculate the t-SNE for the expression data.
+Calculate the t-SNE for the expression data (scaled and not scaled).
 
 ```{r}
 set.seed(1)
-tsne_output <- Rtsne(expression_data, pca = FALSE, preplexity = 60)
-tsne_output <- data.table(tsne_output$Y)
+scaled_edata <- t(scale(t(expression_data), scale = FALSE, center = TRUE))
+tsne_output.unscaled <- Rtsne(expression_data, pca = FALSE, preplexity = 60)
+tsne_output.unscaled <- data.table(tsne_output.unscaled$Y)
+tsne_output.scaled <- Rtsne(scaled_edata, pca = FALSE, preplexity = 60)
+tsne_output.scaled <- data.table(tsne_output.scaled$Y)
 ```
 
 Cluster the data.
@@ -219,11 +222,16 @@ clusters <- kmeans(expression_data, centers = 5)
 Plot the t-SNE with highlighted clusters.
 
 ```{r}
-pdf("Guzek_problem5.pdf", width = 8, height = 5)
-tsne_clustered <- data.table(expression_data, tsne_output, keep.rownames = TRUE)
-ggplot(tsne_clustered) +
-  geom_point(aes(x = V1, y = V2, col = clusters$cluster)) +
-  scale_color_distiller(palette = "Spectral") +
-  labs(title = ("Guzek_problem5"))
-dev.off()
+#pdf("Guzek_problem5.pdf", width = 16, height = 5)
+tsne_clustered.unscaled <- data.table(expression_data, tsne_output.unscaled, keep.rownames = TRUE)
+tsne_clustered.scaled <- data.table(expression_data, tsne_output.scaled, keep.rownames = TRUE)
+tsne_plot.unscaled <- ggplot(tsne_clustered.unscaled) +
+  geom_point(aes(x = V1, y = V2, col = as.factor(clusters$cluster))) +
+  labs(title = ("Guzek_problem5 (data not scaled)"), color = "Batch")
+tsne_plot.scaled <- ggplot(tsne_clustered.scaled) +
+  geom_point(aes(x = V1, y = V2, col = as.factor(clusters$cluster))) +
+  labs(title = ("Guzek_problem5 (scaled data)"), color = "Batch")
+figure <- ggarrange(tsne_plot.unscaled, tsne_plot.scaled, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+figure
+#dev.off()
 ```

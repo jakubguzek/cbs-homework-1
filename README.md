@@ -1,6 +1,6 @@
-## Dependancies and setup
+## Dependencies and setup
 
-Load the dependancies
+Load the dependencies.
 
 Set theme for the plots
 
@@ -31,20 +31,19 @@ Initialize the expression data as a matrix
 
     ## [1] 36536    21
 
-    expression_data[1:5, 1:10] # take a look at the data
+    expression_data[1:10, 1:5] # take a look at the data
 
-    ##                    SRX033480 SRX033488 SRX033481 SRX033489 SRX033482 SRX033490
-    ## ENSMUSG00000000001       369       744       287       769       348       803
-    ## ENSMUSG00000000003         0         0         0         0         0         0
-    ## ENSMUSG00000000028         0         1         0         1         1         1
-    ## ENSMUSG00000000031         0         0         0         0         0         0
-    ## ENSMUSG00000000037         0         1         1         5         0         4
-    ##                    SRX033483 SRX033476 SRX033478 SRX033479
-    ## ENSMUSG00000000001       433       469       585       321
-    ## ENSMUSG00000000003         0         0         0         0
-    ## ENSMUSG00000000028         0         7         6         1
-    ## ENSMUSG00000000031         0         0         0         0
-    ## ENSMUSG00000000037         0         0         0         0
+    ##                    SRX033480 SRX033488 SRX033481 SRX033489 SRX033482
+    ## ENSMUSG00000000001       369       744       287       769       348
+    ## ENSMUSG00000000003         0         0         0         0         0
+    ## ENSMUSG00000000028         0         1         0         1         1
+    ## ENSMUSG00000000031         0         0         0         0         0
+    ## ENSMUSG00000000037         0         1         1         5         0
+    ## ENSMUSG00000000049         0         1         0         1         0
+    ## ENSMUSG00000000056        21        46        20        36        12
+    ## ENSMUSG00000000058        15        43        12        34        14
+    ## ENSMUSG00000000078       517       874       340       813       378
+    ## ENSMUSG00000000085         0         0         0         0         0
 
     expression_data <- expression_data[rowMeans(expression_data) > 10, ]
     expression_data <- log2(as.matrix(expression_data) + 1)
@@ -59,6 +58,7 @@ Initialize the expression data as a matrix
 
 Create a heatmap for homework problem 1
 
+    #png("Guzek_problem1.png", height = 700, width = 700)
     heatmap.2(expression_data,
       # Should be clustered both by columns and rows by default
       main = "Guzek_problem1.png",
@@ -72,6 +72,8 @@ Create a heatmap for homework problem 1
     )
 
 ![](homework_files/figure-markdown_strict/unnamed-chunk-5-1.png)
+
+    #dev.off()
 
 ## Homework problem 2
 
@@ -125,6 +127,7 @@ Let’s plot the actual PCA’s
 
     PC <- data.table(svd.out$v, pData(bottomly.eset))
 
+    #pdf("Guzek_problem2.pdf", width = 8, height = 5)
     # I tried creating those plots in a for loop but it didn't work for some reason
     # ggplot(PC) +  geom_point(aes(x=V1, y=V2, col=as.factor(strain)))
     # ggplot(PC) +  geom_point(aes(x=V1, y=V3, col=as.factor(strain))) # goodish separation
@@ -147,6 +150,7 @@ Let’s plot the actual PCA’s
     # ggplot(PC) +  geom_point(aes(x=V4, y=V5, col=as.factor(strain)))
     # ggplot(PC) +  geom_point(aes(x=V4, y=V6, col=as.factor(strain)))
     # ggplot(PC) +  geom_point(aes(x=V5, y=V6, col=as.factor(strain)))
+    #dev.off()
 
 ## Homework problem 3
 
@@ -155,12 +159,15 @@ Let’s plot the actual PCA’s
 
 Top two left singular vectors.
 
+    #pdf("Guzek_problem3.pdf", width = 16, height = 9)
     par(mfrow = c(1, 2))
     plot(svd.out$u[, 1], pch = 20)
     plot(svd.out$u[, 2], pch = 20)
     mtext("Guzek_problem3", side = 3, line = -2, outer = TRUE)
 
 ![](homework_files/figure-markdown_strict/unnamed-chunk-12-1.png)
+
+    #dev.off()
 
 ## Homework problem 4
 
@@ -177,6 +184,7 @@ Violin plots for the top 5 left singular vectors.
     ## check.names, : Item 2 has 21 rows but longest item has 8544; recycled with
     ## remainder.
 
+    #png("Guzek_problem4.png", width = 800, height = 500)
     V1 <- ggplot(loadings) +
       geom_violin(aes(x = as.factor(strain), y = V1), draw_quantiles = c(0.25, 0.50, 0.75)) +
       xlab("Strain")
@@ -197,6 +205,8 @@ Violin plots for the top 5 left singular vectors.
 
 ![](homework_files/figure-markdown_strict/unnamed-chunk-13-1.png)
 
+    #dev.off()
+
 ## Homework problem 5
 
 > *Homework Problem 5:* Cluster the genes (rows) using K-means
@@ -205,11 +215,14 @@ Violin plots for the top 5 left singular vectors.
 > previously) while using the 5 clusters to color the data points
 > corresponding to genes.
 
-Calculate the t-SNE for the expression data.
+Calculate the t-SNE for the expression data (scaled and not scaled).
 
     set.seed(1)
-    tsne_output <- Rtsne(expression_data, pca = FALSE, preplexity = 60)
-    tsne_output <- data.table(tsne_output$Y)
+    scaled_edata <- t(scale(t(expression_data), scale = FALSE, center = TRUE))
+    tsne_output.unscaled <- Rtsne(expression_data, pca = FALSE, preplexity = 60)
+    tsne_output.unscaled <- data.table(tsne_output.unscaled$Y)
+    tsne_output.scaled <- Rtsne(scaled_edata, pca = FALSE, preplexity = 60)
+    tsne_output.scaled <- data.table(tsne_output.scaled$Y)
 
 Cluster the data.
 
@@ -217,10 +230,18 @@ Cluster the data.
 
 Plot the t-SNE with highlighted clusters.
 
-    tsne_clustered <- data.table(expression_data, tsne_output, keep.rownames = TRUE)
-    ggplot(tsne_clustered) +
-      geom_point(aes(x = V1, y = V2, col = clusters$cluster)) +
-      scale_color_distiller(palette = "Spectral") +
-      labs(title = ("Guzek_problem5"))
+    #pdf("Guzek_problem5.pdf", width = 16, height = 5)
+    tsne_clustered.unscaled <- data.table(expression_data, tsne_output.unscaled, keep.rownames = TRUE)
+    tsne_clustered.scaled <- data.table(expression_data, tsne_output.scaled, keep.rownames = TRUE)
+    tsne_plot.unscaled <- ggplot(tsne_clustered.unscaled) +
+      geom_point(aes(x = V1, y = V2, col = as.factor(clusters$cluster))) +
+      labs(title = ("Guzek_problem5 (data not scaled)"), color = "Batch")
+    tsne_plot.scaled <- ggplot(tsne_clustered.scaled) +
+      geom_point(aes(x = V1, y = V2, col = as.factor(clusters$cluster))) +
+      labs(title = ("Guzek_problem5 (scaled data)"), color = "Batch")
+    figure <- ggarrange(tsne_plot.unscaled, tsne_plot.scaled, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+    figure
 
 ![](homework_files/figure-markdown_strict/unnamed-chunk-16-1.png)
+
+    #dev.off()
